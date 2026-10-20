@@ -20,7 +20,7 @@ Full plan in docs/PLAN.md; tasks in docs/tasks.
 - Wrapped errors with fmt.Errorf("...: %w", err)
 
 # Documentation rules
-- README and docs in Portuguese/BR
+- README in Portuguese/BR; everything else in docs/ (tasks, PLAN.md) in English
 - Every command listed in the documentation should exist in Makefile and work
 
 # Limits
