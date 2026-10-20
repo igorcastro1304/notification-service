@@ -1,22 +1,33 @@
-# CLAUDE.md
+# notification-service
+Golang event-driven notification service (portfolio project).
+Goal architecture: API (REST, gRPC later) -> Postgres outbox -> Redpanda (Kafka) -> workers with idempotency in Redis.
+Full plan in docs/PLAN.md; tasks in docs/tasks.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# Current state
+- Only exists cmd/api with GET /healthz. Postgres, Redpand and Redis go up with docker compose, but the code don't use anybody.
 
-## Project status
+# Commands
+- make up / make down: up and down the infrastructure
+- make test: go test -race ./...
+- make run-api: run API in :8080
 
-`notification-service` has not been started yet. It holds only a `LICENSE`, a Go `.gitignore` (from the GitHub Go template), and an empty `.env`. There is no `go.mod`, no source code, no build tooling and no tests.
+# Coding rules
+- Go 1.25+, standard library when possible; ask before add external dependencies
+- Tests HTTP with net/http/httptest, without up a real server
+- Table-driven tests when exists more than one case
+- Test's name describes the behavior: TestHealthz_ReturnsOK
+- Logs with log/slog
+- Wrapped errors with fmt.Errorf("...: %w", err)
 
-The `.gitignore` shows the project is meant to be written in Go. `.env` is gitignored, so local configuration and secrets go there.
+# Documentation rules
+- README and docs in Portuguese/BR
+- Every command listed in the documentation should exist in Makefile and work
 
-## Commands
+# Limits
+- Don't make changes in docker-compose.yml, Makefile or .env.example without asking
+- Don't create folders or packages that task doesn't demands
+- A task is finished when make test passes
 
-No project-specific build or test tooling exists yet. Once a `go.mod` is added, the standard Go commands apply:
-
-```bash
-go build ./...                          # build
-go test ./...                           # run all tests
-go test ./path/to/pkg -run TestName     # run a single test
-go vet ./...                            # static checks
-```
-
-Update this file once the module layout, entry points and any Makefile, Docker or CI setup exist.
+# Git
+- Conventional Commits (feat:, fix:, test:, docs:, chore:)
+- Don't make commits or pushes; propose the message and I commit
