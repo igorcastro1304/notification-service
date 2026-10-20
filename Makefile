@@ -2,7 +2,7 @@
 export
 
 .PHONY: help tools up down reset ps logs topics psql redis-cli \
-	tidy run-api
+	tidy run-api test
 
 help: ## Lista os comandos
 	@awk 'BEGIN {FS = ": ## "}; /^[a-zA-Z_-]+: ## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -37,3 +37,6 @@ tidy: ## Arruma o go.mod
 
 run-api: ## Roda a API
 	go run ./cmd/api
+
+test: ## Roda os testes
+	go test -race ./...
