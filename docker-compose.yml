@@ -1,0 +1,89 @@
+name: notification-service
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: notification-service-postgres
+    environment:
+      POSTGRES_USER: notification_service
+      POSTGRES_PASSWORD: notification_service
+      POSTGRES_DB: notification_service
+    ports:
+      - "55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification_service -d notification_service"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.5
+    container_name: notification-service-redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --mode dev-container
+      - --smp 1
+      - --default-log-level=warn
+    ports:
+      - "19092:19092"
+      - "19644:9644"
+    volumes:
+      - redpanda:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  init-topics:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.5
+    container_name: notification-service-init-topics
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        rpk topic create notifications.requested notifications.retry notifications.dlq \
+          --partitions 6 --replicas 1 --if-not-exists -X brokers=redpanda:9092
+    restart: "no"
+
+  console:
+    image: docker.redpanda.com/redpandadata/console:v3.12.0
+    container_name: notification-service-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      REDPANDA_ADMINAPI_ENABLED: "true"
+      REDPANDA_ADMINAPI_URLS: http://redpanda:9644
+    ports:
+      - "8081:8080"
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: notification-service-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
+  redpanda:
+  redisdata:

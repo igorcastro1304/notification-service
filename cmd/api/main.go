@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"log"
+	"net/http"
+)
 
 func main() {
-	fmt.Println("Hello World!")
+	log.Println("API hearing in :8080")
+	log.Fatal(http.ListenAndServe(":8080", newRouter()))
 }
